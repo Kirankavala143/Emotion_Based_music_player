@@ -4,12 +4,14 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EmotionSelector } from '@/components/EmotionSelector';
 import { MusicPlayer } from '@/components/MusicPlayer';
+import { EmotionRecognition } from '@/components/EmotionRecognition';
 import { mockTracks, emotions, EmotionType } from '@/lib/music-data';
 import { cn } from '@/lib/utils';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, BrainCircuit } from 'lucide-react';
 
 export default function Home() {
   const [selectedEmotion, setSelectedEmotion] = useState<EmotionType | null>(null);
+  const [detectionMode, setDetectionMode] = useState<'manual' | 'ai'>('manual');
 
   const filteredTracks = useMemo(() => {
     if (!selectedEmotion) return [];
@@ -58,23 +60,76 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-16 space-y-4"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/60 text-xs font-medium uppercase tracking-widest mb-4">
-            <Sparkles size={14} className="text-yellow-400" />
-            AI Emotion Sync
+          <div className="flex flex-col items-center gap-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/60 text-xs font-medium uppercase tracking-widest">
+              <Sparkles size={14} className="text-yellow-400" />
+              AI Emotion Sync
+            </div>
+            
+            <div className="flex items-center p-1 bg-white/5 rounded-full border border-white/10">
+              <button
+                onClick={() => setDetectionMode('manual')}
+                className={cn(
+                  "px-6 py-2 rounded-full text-sm font-medium transition-all duration-300",
+                  detectionMode === 'manual' ? "bg-white text-black shadow-lg" : "text-white/40 hover:text-white"
+                )}
+              >
+                Manual Selection
+              </button>
+              <button
+                onClick={() => setDetectionMode('ai')}
+                className={cn(
+                  "px-6 py-2 rounded-full text-sm font-medium flex items-center gap-2 transition-all duration-300",
+                  detectionMode === 'ai' ? "bg-white text-black shadow-lg" : "text-white/40 hover:text-white"
+                )}
+              >
+                <BrainCircuit size={16} />
+                AI Recognition
+              </button>
+            </div>
           </div>
-          <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter">
+
+          <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter mt-8">
             How are you <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/40">feeling?</span>
           </h1>
           <p className="text-lg md:text-xl text-white/40 max-w-2xl mx-auto">
-            Select an emotion and let our curated soundscapes match your current mood perfectly.
+            {detectionMode === 'ai' 
+              ? "Let our AI analyze your expression and recommend the perfect soundscape."
+              : "Select an emotion and let our curated soundscapes match your current mood perfectly."}
           </p>
         </motion.div>
 
-        {/* Emotion Selection */}
-        <EmotionSelector
-          selectedEmotion={selectedEmotion}
-          onSelect={(emotion) => setSelectedEmotion(emotion)}
-        />
+        {/* Selection Area */}
+        <div className="w-full max-w-4xl mx-auto">
+          <AnimatePresence mode="wait">
+            {detectionMode === 'manual' ? (
+              <motion.div
+                key="manual"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <EmotionSelector
+                  selectedEmotion={selectedEmotion}
+                  onSelect={(emotion) => setSelectedEmotion(emotion)}
+                />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="ai"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <EmotionRecognition
+                  onEmotionDetected={(emotion) => setSelectedEmotion(emotion)}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
         {/* Music Player */}
         <AnimatePresence mode="wait">
