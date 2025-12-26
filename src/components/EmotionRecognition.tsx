@@ -9,24 +9,16 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
 // We'll load faceapi dynamically to avoid SSR issues
+// Note: We don't import at the top level to prevent SSR crashes
 let faceapi: any = null;
 
 interface EmotionRecognitionProps {
   onEmotionDetected: (emotion: EmotionType) => void;
 }
 
-const emotionMap: Record<string, EmotionType> = {
-  happy: 'joy',
-  sad: 'melancholy',
-  angry: 'serenity',
-  neutral: 'focus',
-  surprised: 'energy',
-  fearful: 'serenity',
-  disgusted: 'serenity',
-};
-
 export const EmotionRecognition: React.FC<EmotionRecognitionProps> = ({ onEmotionDetected }) => {
   const [isModelLoaded, setIsModelLoaded] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [detectedEmotion, setDetectedEmotion] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -37,10 +29,16 @@ export const EmotionRecognition: React.FC<EmotionRecognitionProps> = ({ onEmotio
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    let isMounted = true;
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
     
     const loadFaceApiAndModels = async () => {
       try {
+        if (typeof window === 'undefined') return;
+
         if (!faceapi) {
           console.log('Loading face-api library...');
           faceapi = await import('@vladmandic/face-api');
@@ -57,26 +55,23 @@ export const EmotionRecognition: React.FC<EmotionRecognitionProps> = ({ onEmotio
         }
 
         // Load models
-        await Promise.all([
-          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-          faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
-        ]);
+        // Use individual load calls for better error tracking if needed
+        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+        await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
         
-        if (isMounted) {
-          console.log('Models loaded successfully');
-          setIsModelLoaded(true);
-        }
+        console.log('Models loaded successfully');
+        setIsModelLoaded(true);
       } catch (err: any) {
         console.error('Error in AI setup:', err);
-        if (isMounted) {
-          setError(`AI Setup Error: ${err?.message || 'Unknown error'}`);
-        }
+        setError(`AI Setup Error: ${err?.message || 'Unknown error'}`);
       }
     };
     
     loadFaceApiAndModels();
-    return () => { isMounted = false; };
-  }, [isModelLoaded]);
+  }, [isMounted, isModelLoaded]);
+
+  if (!isMounted) return null;
+
 
   const handleDetection = useCallback(async (input: HTMLVideoElement | HTMLImageElement) => {
     if (!isModelLoaded || !faceapi) return;
