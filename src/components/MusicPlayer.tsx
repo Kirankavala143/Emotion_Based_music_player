@@ -180,10 +180,18 @@ export function MusicPlayer({ tracks, onTrackChange, accentColor = 'from-purple-
                 <SkipForward size={28} fill="currentColor" />
               </button>
 
-              <div className="hidden md:flex items-center gap-2 ml-auto text-white/40 hover:text-white transition-colors">
-                <Volume2 size={20} />
-                <div className="w-20 h-1 bg-white/20 rounded-full overflow-hidden">
-                  <div className="w-2/3 h-full bg-white/60" />
+              <div className="hidden md:flex items-center gap-4 ml-auto group">
+                <Volume2 size={20} className="text-white/40 group-hover:text-white transition-colors" />
+                <div className="w-24">
+                  <Slider
+                    defaultValue={[70]}
+                    max={100}
+                    step={1}
+                    className="cursor-pointer"
+                    onValueChange={(value) => {
+                      if (audioRef.current) audioRef.current.volume = value[0] / 100;
+                    }}
+                  />
                 </div>
               </div>
             </div>
