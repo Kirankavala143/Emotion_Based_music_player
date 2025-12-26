@@ -149,7 +149,7 @@ export const EmotionRecognition: React.FC<EmotionRecognitionProps> = ({ onEmotio
                 <>
                   <Webcam
                     ref={webcamRef}
-                    className="w-full h-full object-cover mirror"
+                    className="w-full h-full object-cover scale-x-[-1]"
                     screenshotFormat="image/jpeg"
                     videoConstraints={{ facingMode: 'user' }}
                   />
