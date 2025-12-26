@@ -2,12 +2,17 @@
 
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import dynamic from 'next/dynamic';
 import { EmotionSelector } from '@/components/EmotionSelector';
 import { MusicPlayer } from '@/components/MusicPlayer';
-import { EmotionRecognition } from '@/components/EmotionRecognition';
 import { mockTracks, emotions, EmotionType } from '@/lib/music-data';
 import { cn } from '@/lib/utils';
 import { Sparkles, BrainCircuit } from 'lucide-react';
+
+const EmotionRecognition = dynamic(
+  () => import('@/components/EmotionRecognition').then((mod) => mod.EmotionRecognition),
+  { ssr: false }
+);
 
 export default function Home() {
   const [selectedEmotion, setSelectedEmotion] = useState<EmotionType | null>(null);
