@@ -23,6 +23,18 @@ export function MusicPlayer({ tracks, onTrackChange, accentColor = 'from-purple-
   const currentTrack = tracks[currentTrackIndex];
 
   useEffect(() => {
+    // Auto-play when tracks change (new emotion selected)
+    if (tracks.length > 0) {
+      setIsPlaying(true);
+      setCurrentTrackIndex(0);
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.play().catch(() => setIsPlaying(false));
+      }
+    }
+  }, [tracks]);
+
+  useEffect(() => {
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.play().catch(() => setIsPlaying(false));
@@ -31,14 +43,6 @@ export function MusicPlayer({ tracks, onTrackChange, accentColor = 'from-purple-
       }
     }
   }, [isPlaying, currentTrackIndex]);
-
-  useEffect(() => {
-    // Reset progress when track changes
-    setProgress(0);
-    if (isPlaying && audioRef.current) {
-      audioRef.current.play().catch(() => setIsPlaying(false));
-    }
-  }, [currentTrackIndex]);
 
   const togglePlay = () => setIsPlaying(!isPlaying);
 
