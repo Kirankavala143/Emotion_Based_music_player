@@ -1,12 +1,5 @@
 'use client';
 
-// Polyfill TextEncoder for SSR if needed by libraries
-if (typeof window === 'undefined' && typeof global !== 'undefined' && !global.TextEncoder) {
-  const { TextEncoder, TextDecoder } = require('util');
-  (global as any).TextEncoder = TextEncoder;
-  (global as any).TextDecoder = TextDecoder;
-}
-
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Webcam from 'react-webcam';
 import { motion, AnimatePresence } from 'framer-motion';
