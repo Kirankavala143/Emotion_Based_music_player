@@ -1,13 +1,15 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import * as faceapi from '@vladmandic/face-api';
 import Webcam from 'react-webcam';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, Upload, RefreshCw, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { EmotionType } from '@/lib/music-data';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+
+// We'll load faceapi dynamically to avoid SSR issues
+let faceapi: any = null;
 
 interface EmotionRecognitionProps {
   onEmotionDetected: (emotion: EmotionType) => void;
@@ -16,7 +18,7 @@ interface EmotionRecognitionProps {
 const emotionMap: Record<string, EmotionType> = {
   happy: 'joy',
   sad: 'melancholy',
-  angry: 'serenity', // Relaxing music for angry
+  angry: 'serenity',
   neutral: 'focus',
   surprised: 'energy',
   fearful: 'serenity',
@@ -37,48 +39,47 @@ export const EmotionRecognition: React.FC<EmotionRecognitionProps> = ({ onEmotio
   useEffect(() => {
     let isMounted = true;
     
-    const loadModels = async () => {
-      if (isModelLoaded) return;
-      
+    const loadFaceApiAndModels = async () => {
       try {
+        if (!faceapi) {
+          console.log('Loading face-api library...');
+          faceapi = await import('@vladmandic/face-api');
+        }
+
+        if (isModelLoaded) return;
+        
         console.log('Starting model loading...');
         const MODEL_URL = '/models';
         
-        // Wait for tfjs backend to be ready
         if (faceapi.tf) {
           await faceapi.tf.ready();
           console.log('TF Backend ready:', faceapi.tf.getBackend());
         }
 
-        // Load models sequentially for better error tracking
-        console.log('Loading tinyFaceDetector...');
-        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-        
-        console.log('Loading faceExpressionNet...');
-        await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
+        // Load models
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+          faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
+        ]);
         
         if (isMounted) {
           console.log('Models loaded successfully');
           setIsModelLoaded(true);
         }
       } catch (err: any) {
-        console.error('Error loading models detailed:', {
-          message: err?.message,
-          stack: err?.stack,
-          error: err
-        });
+        console.error('Error in AI setup:', err);
         if (isMounted) {
-          setError(`Failed to load AI models: ${err?.message || 'Unknown error'}`);
+          setError(`AI Setup Error: ${err?.message || 'Unknown error'}`);
         }
       }
     };
     
-    loadModels();
+    loadFaceApiAndModels();
     return () => { isMounted = false; };
   }, [isModelLoaded]);
 
   const handleDetection = useCallback(async (input: HTMLVideoElement | HTMLImageElement) => {
-    if (!isModelLoaded) return;
+    if (!isModelLoaded || !faceapi) return;
     
     setIsLoading(true);
     setDetectedEmotion(null);
@@ -101,9 +102,9 @@ export const EmotionRecognition: React.FC<EmotionRecognitionProps> = ({ onEmotio
       } else {
         setError('No face detected. Please try again.');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Detection error:', err);
-      setError('An error occurred during detection.');
+      setError(`Detection error: ${err?.message || 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
